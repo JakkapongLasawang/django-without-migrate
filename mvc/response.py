@@ -1,3 +1,5 @@
+#  Copyright © 2022., Brainergy Co., Ltd. All rights reserved.
+
 import json
 
 from django.http import HttpResponse
