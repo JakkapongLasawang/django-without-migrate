@@ -1,96 +1,73 @@
 import json
 from django.views import View
-from .models import Book
+from pydantic import ValidationError, parse_obj_as
+from typing import List
+from book_api.validators.book import CreateBook, UpdateBook, GetBook, DeleteBook
+from book_api.models import Book
+from mvc.decode_payload import decode_payload
+from mvc.error_msg import error_msg
 from mvc.response import js_response
 
 
 class REST(View):
     def get(self, request):
         try:
-            books = Book.objects.all()
+            books = Book.objects.all().values()
         except Book.DoesNotExist:
             return js_response(400, "Not Found", {})
 
-        book_list = []
-        for book in books:
-            jsr = {
-                "id": book.id,
-                "title": book.title,
-                "number_of_pages": book.number_of_pages,
-                "quantity": book.quantity,
-                "published": str(book.published),
-            }
-            book_list.append(jsr)
-
-        return js_response(0, "success", book_list)
+        response = parse_obj_as(List[GetBook], list(books))
+        return js_response(0, "OK", response)
 
     def post(self, request):
-        body = json.loads(request.body.decode("utf-8"))
-        try:
-            title = body["title"]
-            number_of_pages = body["number_of_pages"]
-            author = body["author"]
-            quantity = body["quantity"]
-        except Exception:
-            return js_response(400, "Input not valid", {})
+        body = decode_payload(request.body)
+        if body is None:
+            return js_response(400, "Invalid JSON", {})
 
+        try:
+            payload = CreateBook(**body).dict()
+        except ValidationError as e:
+            return js_response(400, "Input not valid", error_msg(e))
         book = None
         try:
-            book = Book.objects.create(
-                title=title,
-                number_of_pages=number_of_pages,
-                author=author,
-                quantity=quantity,
-            )
+            book = Book.objects.create(**payload)
         except Exception:
             return js_response(400, "Cannot create book", {})
 
-        jsr = {
-            "id": book.id,
-            "title": book.title,
-        }
-        return js_response(0, "success", jsr)
-    
+        return js_response(0, "success", GetBook(**book.__dict__))
+
     def put(self, request):
-        body = json.loads(request.body.decode("utf-8"))
+        body = decode_payload(request.body)
+        if body is None:
+            return js_response(400, "Invalid JSON", {})
+
         try:
-            id = body["id"]
-            title = body["title"]
-            number_of_pages = body["number_of_pages"]
-            author = body["author"]
-            quantity = body["quantity"]
-        except Exception:
-            return js_response(400, "Input not valid", {})
-        
+            payload = UpdateBook(**body).dict()
+        except ValidationError as e:
+            return js_response(400, "Input not valid", error_msg(e))
+
         book = None
         try:
-            book = Book.objects.filter(id=id)
-            book.update(title=title,
-                number_of_pages=number_of_pages,
-                author=author,
-                quantity=quantity,)
+            book = Book.objects.filter(id=payload['id'])
+            del payload['id']
+            book.update(**payload)
         except Exception:
             return js_response(400, "Cannot update book", {})
-        
-        jsr = {
-                "id": book[0].id,
-                "title": book[0].title,
-                "number_of_pages": book[0].number_of_pages,
-                "quantity": book[0].quantity,
-                "published": str(book[0].published),
-            }
-        
-        return js_response(0, "success", jsr)
-    
+
+        return js_response(0, "success", GetBook(**book[0].__dict__))
+
     def delete(self, request):
-        body = json.loads(request.body.decode("utf-8"))
+        body = decode_payload(request.body)
+        if body is None:
+            return js_response(400, "Invalid JSON", {})
+
         try:
-            id = body["id"]
-        except Exception:
-            return js_response(400, "Input not valid", {})
+            payload = UpdateBook(**body).dict()
+        except ValidationError as e:
+            return js_response(400, "Input not valid", error_msg(e))
         try:
-            Book.objects.filter(id=id).delete()
+            Book.objects.filter(id=payload['id']).delete()
         except Exception:
             return js_response(400, "Cannot delete", {})
-        
+
         return js_response(0, "success", {})
