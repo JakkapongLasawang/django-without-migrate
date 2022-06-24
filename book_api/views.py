@@ -62,7 +62,7 @@ class REST(View):
             return js_response(400, "Invalid JSON", {})
 
         try:
-            payload = UpdateBook(**body).dict()
+            payload = DeleteBook(**body).dict()
         except ValidationError as e:
             return js_response(400, "Input not valid", error_msg(e))
         try:
