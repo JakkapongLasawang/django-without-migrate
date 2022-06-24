@@ -12,7 +12,7 @@ from mvc.response import js_response
 class REST(View):
     def get(self, request):
         try:
-            books = Book.objects.all().values()
+            books = Book.objects.all().order_by('-published').values()
         except Book.DoesNotExist:
             return js_response(400, "Not Found", {})
 

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 from pydantic import BaseModel, validator
 
@@ -13,7 +13,7 @@ class GetBook(BaseModel):
 
     @validator('published')
     def format_date(cls, v):
-        return str(v)
+        return str(v+timedelta(hours=7))
 
 
 class CreateBook(BaseModel):
