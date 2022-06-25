@@ -23,7 +23,7 @@ class REST(View):
         try:
             books = Book.objects.all().order_by('-published').values()
         except Book.DoesNotExist:
-            return js_response(400, "Not Found")
+            return js_response(400, NOT_FOUND)
 
         response = parse_obj_as(List[GetBook], list(books))
         return js_response(200, OK, response)
